@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>VS School — варіанти сайту</title>
+<link rel="icon" type="image/png" sizes="32x32" href="images/logo/favicon-32.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600&family=Manrope:wght@400;600&display=swap">
+<style>
+:root{--ink:#23262A;--muted:#62676B;--line:#E2DED5;--dark:#3D4043;--green:#4E9A5E;
+--stripes:repeating-linear-gradient(90deg,#EFE9DF 0 30px,#C4D88E 30px 44px,#EFE9DF 44px 74px,#8FC07A 74px 88px,#EFE9DF 88px 118px,#EDEFC0 118px 132px,#EFE9DF 132px 162px,#D6E4D2 162px 176px,#EFE9DF 176px 206px,#BED2E3 206px 220px,#EFE9DF 220px 250px,#6F8DB1 250px 264px);
+--iris:linear-gradient(120deg,#EDEFC0 0%,#C4D88E 30%,#D6E4D2 55%,#BED2E3 80%,#8FA9C8 100%)}
+*{box-sizing:border-box}
+body{margin:0;background:#F3EFE7;color:var(--ink);font:400 1rem/1.55 "Manrope",system-ui,sans-serif}
+.top{background:var(--dark);color:#F4F1EA;padding:40px max(20px,env(safe-area-inset-left,0px)) 34px;text-align:center;position:relative}
+.top::after{content:"";position:absolute;left:0;right:0;bottom:0;height:10px;background:var(--stripes)}
+.top img{height:110px;width:auto}
+.top p{opacity:.75;margin:14px 0 0}
+main{max-width:1100px;margin:0 auto;padding:36px max(20px,env(safe-area-inset-left,0px)) 56px;display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+a.card{background:#fff;text-decoration:none;color:inherit;padding:26px;display:flex;flex-direction:column;gap:12px;border:1px solid var(--line);transition:transform .25s,box-shadow .25s}
+a.card:hover{transform:translateY(-4px);box-shadow:0 14px 30px rgba(35,38,42,.08)}
+.lvl{font:600 .72rem/1 "Manrope",sans-serif;text-transform:uppercase;letter-spacing:.12em;color:var(--muted)}
+h2{font:600 1.6rem/1.1 "Montserrat",Arial,sans-serif;text-transform:uppercase;margin:0}
+ul{margin:0;padding-left:18px;color:var(--muted);font-size:.95rem;display:grid;gap:4px}
+.go{margin-top:auto;align-self:flex-start;padding:12px 20px;border-radius:30px;background:var(--iris);font:600 .8rem/1 "Montserrat",sans-serif;text-transform:uppercase;letter-spacing:.06em}
+.note{grid-column:1/-1;color:var(--muted);font-size:.85rem;text-align:center;margin:8px 0 0}
+@media (max-width:820px){main{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header class="top">
+  <img src="images/logo/vs-logo-light.svg" alt="VS School">
+  <p>Три варіанти нового сайту ліцею. Оберіть, щоб переглянути.</p>
+</header>
+<main>
+  <a class="card" href="demo-basic/"><span class="lvl">Варіант 1</span><h2>Базовий</h2>
+    <ul><li>Титулка з логотипом на фото школи</li><li>Поява блоків під час прокрутки</li><li>Фільтр гуртків, картки новин</li></ul><span class="go">Переглянути</span></a>
+  <a class="card" href="demo-standard/"><span class="lvl">Варіант 2</span><h2>Стандарт</h2>
+    <ul><li>Заставка з логотипом при вході</li><li>Паралакс, лічильники, бігучий рядок</li><li>Слайдер новин, панель дзвінка на телефоні</li></ul><span class="go">Переглянути</span></a>
+  <a class="card" href="demo-premium/"><span class="lvl">Варіант 3</span><h2>Преміум</h2>
+    <ul><li>Плавна прокрутка, заголовки по словах</li><li>Горизонтальна стрічка рівнів, стопка кроків вступу</li><li>Фотогалерея, заявка у два кроки</li></ul><span class="go">Переглянути</span></a>
+  <p class="note">Демо-версія: фото новин і команди та надсилання заявок працюватимуть після наповнення.</p>
+</main>
+</body>
+</html>
