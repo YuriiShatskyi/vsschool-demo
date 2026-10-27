@@ -57,7 +57,14 @@ html.lenis,html.lenis body{height:auto}
 .m-item:hover::after{opacity:1}
 .m-wide{grid-column:span 2}
 .m-tall{grid-row:span 2}
-@media (max-width:760px){.mosaic{grid-template-columns:1fr 1fr}.m-tall{grid-row:span 1}}
+.m-item[data-src*="entrance"] img{object-position:48% 50%}
+@media (max-width:760px){
+  .mosaic{grid-template-columns:1fr 1fr}
+  .m-tall{grid-row:span 1}
+  /* на телефоні — на всю ширину, лише вхід і їдальня парою */
+  .m-item{grid-column:span 2}
+  .m-item.m-sm-half{grid-column:span 1}
+}
 .lightbox{position:fixed;inset:0;z-index:90;background:rgba(20,22,25,.92);display:grid;place-items:center;padding:clamp(16px,4vw,48px)}
 .lightbox img{max-width:min(1200px,100%);max-height:86vh;object-fit:contain;box-shadow:0 20px 60px rgba(0,0,0,.4)}
 .lb-close,.lb-nav{position:absolute;border:0;background:rgba(255,255,255,.12);color:#fff;width:52px;height:52px;border-radius:50%;font:300 2rem/1 var(--body);cursor:pointer;display:grid;place-items:center}

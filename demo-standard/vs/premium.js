@@ -5,17 +5,15 @@
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var body = document.body;
 
-  /* ---------- Заставка: раз за візит, ~1.5 с ---------- */
+  /* ---------- Заставка з логотипом: при кожному відкритті сторінки, ~1.5 с ----------
+     (без «раз за сеанс»: на одному домені варіанти ділили б цю позначку й заставка зникала) */
   var intro = document.getElementById('intro');
-  var seen = false;
-  try { seen = sessionStorage.getItem('vs-intro') === '1'; } catch (e) {}
-  if (!intro || seen || reduce) {
+  if (!intro || reduce) {
     window.VS_INTRO_MS = 0;
     if (intro) intro.classList.add('gone');
     body.classList.remove('is-loading');
   } else {
     window.VS_INTRO_MS = 1500;
-    try { sessionStorage.setItem('vs-intro', '1'); } catch (e) {}
     setTimeout(function () {
       intro.classList.add('out');
       body.classList.remove('is-loading');
