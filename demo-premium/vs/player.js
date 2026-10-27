@@ -1,11 +1,11 @@
-/* VS School — «Преміум»: фоновий аудіоплеєр.
+/* VS School — «Преміум»: фоновий аудіоплеєр «Співає VS School».
    Треки й стартова гучність — у vs/content.js (music, musicVolume).
 
-   Як працює автозапуск:
-   браузери забороняють сайтам вмикати звук без дії користувача. Тому плеєр
-   пробує заграти одразу, а якщо браузер не дозволив — стартує від першого
-   дотику / кліку / натискання клавіші будь-де на сторінці.
-   Гучність керується через Web Audio (GainNode), бо iPhone ігнорує audio.volume. */
+   • При кожному відкритті сайту починає з випадкової пісні.
+   • Режими: «підряд» (по списку по колу) і «вперемішку» (кожна пісня по разу, потім нове коло).
+   • Автозапуск: браузери забороняють сайтам вмикати звук без дії користувача, тому плеєр
+     пробує заграти одразу, а якщо не дозволили — стартує від першого дотику / кліку / клавіші.
+   • Гучність керується через Web Audio (GainNode), бо iPhone ігнорує audio.volume. */
 (function () {
   var S = window.SITE || {};
   var list = (S.music || []).filter(function (t) { return t && t.src; });
@@ -14,7 +14,10 @@
   if (!box || !audio || !list.length) return;
 
   var $ = function (id) { return document.getElementById(id); };
-  var btnPlay = $('plPlay'), btnPrev = $('plPrev'), btnNext = $('plNext'), btnMute = $('plMute'), btnMin = $('plMin');
+  var btnPlay = $('plPlay'), btnMute = $('plMute'), btnMin = $('plMin');
+  var prevBtns = box.querySelectorAll('.pl-prev'), nextBtns = box.querySelectorAll('.pl-next');   // у рядку плеєра і в шапці треклиста
+  var btnList = $('plListBtn'), panel = $('plPanel'), ul = $('plList');
+  var modeBtns = box.querySelectorAll('.pl-mode');
   var vol = $('plVol'), bar = $('plBar'), fill = $('plFill'), title = $('plTitle'), time = $('plTime');
 
   var store = {
@@ -26,7 +29,9 @@
   if (isNaN(level)) level = typeof S.musicVolume === 'number' ? S.musicVolume : 0.2;
   var muted = store.get('muted') === '1';
   var userPaused = store.get('paused') === '1';   // людина сама вимкнула — не вмикаємо наступного разу
-  var idx = 0, ctx = null, gain = null, fadeTimer = null, wantPlay = false;
+  var shuffle = store.get('mode') === 'shuffle';
+  var idx = 0, ctx = null, gain = null, fadeTimer = null;
+  var history = [], queue = [];                     // для «вперемішку»: що вже грало і що попереду
 
   if (list.length < 2) box.classList.add('single');
   if (store.get('mini') === '1') setMini(true);
@@ -74,33 +79,101 @@
     btnMute.setAttribute('aria-label', muted ? 'Увімкнути звук' : 'Вимкнути звук');
   }
 
+  /* ---------- Режим підряд / вперемішку ---------- */
+  function refillQueue() {
+    queue = list.map(function (_, i) { return i; }).filter(function (i) { return i !== idx; });
+    for (var i = queue.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = queue[i]; queue[i] = queue[j]; queue[j] = t; }
+  }
+  function paintMode() {
+    box.classList.toggle('shuffle', shuffle);
+    var label = shuffle ? 'Режим: вперемішку. Перемкнути на підряд' : 'Режим: підряд. Перемкнути на вперемішку';
+    modeBtns.forEach(function (b) { b.setAttribute('aria-label', label); b.title = shuffle ? 'Вперемішку' : 'Підряд'; });
+  }
+  modeBtns.forEach(function (b) {
+    b.addEventListener('click', function () {
+      shuffle = !shuffle; store.set('mode', shuffle ? 'shuffle' : 'order');
+      if (shuffle) refillQueue();
+      paintMode();
+    });
+  });
+  function nextIndex() {
+    if (!shuffle) return (idx + 1) % list.length;
+    if (!queue.length) refillQueue();
+    return queue.shift();
+  }
+  function prevIndex() {
+    if (shuffle && history.length) return history.pop();
+    return (idx - 1 + list.length) % list.length;
+  }
+
+  /* ---------- Треклист ---------- */
+  list.forEach(function (t, i) {
+    var li = document.createElement('li');
+    var b = document.createElement('button'); b.type = 'button';
+    b.innerHTML = '<span class="n"><i></i><span class="pl-eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span></span><span class="t"><b></b><span></span></span><span class="d"></span>';
+    b.querySelector('.n > i').textContent = i + 1;
+    b.querySelector('.t b').textContent = t.title || ('Пісня ' + (i + 1));
+    b.querySelector('.t span').textContent = t.artist || '';
+    b.querySelector('.d').textContent = t.time || '';
+    b.addEventListener('click', function () {
+      if (i === idx) { if (audio.paused) { userPaused = false; store.set('paused', '0'); play(true); } return; }
+      go(i, true);
+    });
+    li.appendChild(b); ul.appendChild(li);
+  });
+  function paintList() {
+    Array.prototype.forEach.call(ul.children, function (li, i) {
+      li.classList.toggle('on', i === idx);
+      li.querySelector('button').setAttribute('aria-current', i === idx ? 'true' : 'false');
+    });
+  }
+  function setPanel(open) {
+    panel.hidden = !open;
+    btnList.setAttribute('aria-expanded', String(open));
+    btnList.setAttribute('aria-label', open ? 'Сховати список пісень' : 'Показати список пісень');
+    if (open) { var on = ul.querySelector('li.on'); if (on) on.scrollIntoView({ block: 'nearest' }); }
+  }
+  btnList.addEventListener('click', function () { setPanel(panel.hidden); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !panel.hidden) { setPanel(false); btnList.focus(); } });
+  document.addEventListener('pointerdown', function (e) { if (!panel.hidden && !box.contains(e.target)) setPanel(false); });
+
   /* ---------- Треки ---------- */
   function load(i) {
-    idx = (i + list.length) % list.length;
-    audio.src = list[idx].src;
-    title.textContent = list[idx].title || ('Трек ' + (idx + 1));
+    idx = i;
+    var t = list[idx];
+    audio.src = t.src;
+    title.textContent = t.title || ('Пісня ' + (idx + 1));
+    if (t.artist) { var sm = document.createElement('small'); sm.textContent = ' · ' + t.artist; title.appendChild(sm); }
     fill.style.width = '0%';
     time.textContent = '0:00';
+    paintList();
     if ('mediaSession' in navigator) {
       try {
         navigator.mediaSession.metadata = new MediaMetadata({
-          title: title.textContent, artist: 'VS School',
+          title: t.title || '', artist: t.artist || 'VS School', album: 'Співає VS School',
           artwork: [{ src: '../images/logo/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }]
         });
       } catch (e) {}
     }
   }
+  function go(i, fromUser) {
+    if (i === idx) return;
+    history.push(idx); if (history.length > 50) history.shift();
+    queue = queue.filter(function (q) { return q !== i; });
+    load(i);
+    if (fromUser) { userPaused = false; store.set('paused', '0'); }
+    if (fromUser || !audio.paused || !userPaused) play(!!fromUser);
+  }
   function fmt(s) { s = Math.max(0, Math.floor(s || 0)); return Math.floor(s / 60) + ':' + ('0' + s % 60).slice(-2); }
 
   /* ---------- Відтворення ---------- */
   function play(fromUser) {
-    wantPlay = true;
     if (fromUser) setupGain();
     var p = audio.play();
     applyVolume(level, true);
-    if (p && p.catch) p.catch(function () { wantPlay = false; if (!userPaused) waitForGesture(); });
+    if (p && p.catch) p.catch(function () { if (!userPaused) waitForGesture(); });
   }
-  function pause() { wantPlay = false; audio.pause(); }
+  function pause() { audio.pause(); }
 
   /* Різні браузери вважають «дією користувача» різні події (миша — pointerdown,
      дотик — touchend/click), тому слухаємо всі й пробуємо щоразу, доки не заграє. */
@@ -125,7 +198,7 @@
   audio.addEventListener('playing', disarm);
   audio.addEventListener('play', function () { box.classList.add('playing'); box.classList.remove('wait'); btnPlay.setAttribute('aria-label', 'Пауза'); });
   audio.addEventListener('pause', function () { box.classList.remove('playing'); btnPlay.setAttribute('aria-label', 'Увімкнути музику'); });
-  audio.addEventListener('ended', function () { load(idx + 1); play(false); });   // після останнього — знову перший
+  audio.addEventListener('ended', function () { go(nextIndex(), false); });
   audio.addEventListener('timeupdate', function () {
     var d = audio.duration || 0;
     var k = d ? audio.currentTime / d : 0;
@@ -133,18 +206,25 @@
     bar.setAttribute('aria-valuenow', String(Math.round(k * 100)));
     time.textContent = fmt(audio.currentTime) + (d ? ' / ' + fmt(d) : '');
   });
-  audio.addEventListener('error', function () { if (list.length > 1) { load(idx + 1); if (wantPlay) play(false); } });
+  var errors = 0;
+  audio.addEventListener('error', function () {
+    if (list.length > 1 && ++errors < list.length) go(nextIndex(), false);
+  });
+  audio.addEventListener('canplay', function () { errors = 0; });
 
   /* ---------- Кнопки ---------- */
   btnPlay.addEventListener('click', function () {
     if (audio.paused) { userPaused = false; store.set('paused', '0'); play(true); }
     else { userPaused = true; store.set('paused', '1'); pause(); disarm(); box.classList.remove('wait'); }
   });
-  btnPrev.addEventListener('click', function () {
-    if (audio.currentTime > 3) { audio.currentTime = 0; return; }
-    load(idx - 1); userPaused = false; play(true);
+  prevBtns.forEach(function (b) {
+    b.addEventListener('click', function () {
+      if (audio.currentTime > 3) { audio.currentTime = 0; return; }
+      // крок назад не має потрапляти в історію знову
+      load(prevIndex()); userPaused = false; store.set('paused', '0'); play(true);
+    });
   });
-  btnNext.addEventListener('click', function () { load(idx + 1); userPaused = false; play(true); });
+  nextBtns.forEach(function (b) { b.addEventListener('click', function () { go(nextIndex(), true); }); });
   btnMute.addEventListener('click', function () {
     setupGain();
     muted = !muted; store.set('muted', muted ? '1' : '0');
@@ -172,6 +252,7 @@
     box.classList.toggle('mini', on);
     btnMin.setAttribute('aria-expanded', String(!on));
     btnMin.setAttribute('aria-label', on ? 'Розгорнути плеєр' : 'Згорнути плеєр');
+    if (on && panel) setPanel(false);
   }
   btnMin.addEventListener('click', function () {
     var on = !box.classList.contains('mini'); setMini(on); store.set('mini', on ? '1' : '0');
@@ -180,11 +261,11 @@
   /* Кнопки на заблокованому екрані / в шторці телефона */
   if ('mediaSession' in navigator) {
     try {
-      navigator.mediaSession.setActionHandler('play', function () { userPaused = false; play(true); });
+      navigator.mediaSession.setActionHandler('play', function () { userPaused = false; store.set('paused', '0'); play(true); });
       navigator.mediaSession.setActionHandler('pause', function () { userPaused = true; store.set('paused', '1'); pause(); });
       if (list.length > 1) {
-        navigator.mediaSession.setActionHandler('previoustrack', function () { load(idx - 1); play(true); });
-        navigator.mediaSession.setActionHandler('nexttrack', function () { load(idx + 1); play(true); });
+        navigator.mediaSession.setActionHandler('previoustrack', function () { load(prevIndex()); play(true); });
+        navigator.mediaSession.setActionHandler('nexttrack', function () { go(nextIndex(), true); });
       }
     } catch (e) {}
   }
@@ -203,8 +284,10 @@
       .observe(mcta, { attributes: true, attributeFilter: ['class'] });
   }
 
-  /* ---------- Старт ---------- */
-  load(0); paintVol();
+  /* ---------- Старт: випадкова пісня при кожному відкритті ---------- */
+  load(Math.floor(Math.random() * list.length));
+  if (shuffle) refillQueue();
+  paintVol(); paintMode();
   box.hidden = false;
   var introMs = window.VS_INTRO_MS || 0;
   if (introMs) { box.classList.add('hide-intro'); setTimeout(function () { box.classList.remove('hide-intro'); }, introMs + 300); }

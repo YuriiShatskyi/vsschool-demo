@@ -419,22 +419,39 @@
   <a class="go" href="#contacts">Записатися</a>
 </div>
 
-<!-- Фоновий аудіоплеєр (треки — у vs/content.js, розділ music) -->
-<div class="player" id="player" role="region" aria-label="Музика" hidden>
+<!-- Фоновий аудіоплеєр «Співає VS School» (треки — у vs/content.js, розділ music) -->
+<div class="player" id="player" role="region" aria-label="Плеєр «Співає VS School»" hidden>
+  <div class="pl-panel" id="plPanel" hidden>
+    <div class="pl-head">
+      <b>Співає VS School</b>
+      <button type="button" class="pl-btn pl-prev pl-head-nav" aria-label="Попередня пісня"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h2v14H6zM20 5v14L9 12z" fill="currentColor"/></svg></button>
+      <button type="button" class="pl-btn pl-next pl-head-nav" aria-label="Наступна пісня"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 5h2v14h-2zM4 5v14l11-7z" fill="currentColor"/></svg></button>
+      <button type="button" class="pl-btn pl-mode" aria-label="Режим: підряд. Перемкнути на вперемішку">
+      <svg class="i-shuffle" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h3.5c2 0 3.2.9 4.3 2.6l2.4 4.8c1.1 1.7 2.3 2.6 4.3 2.6H20M4 17h3.5c1.4 0 2.4-.4 3.3-1.3M14.2 8.3c.9-.9 1.9-1.3 3.3-1.3H20M17.5 4.5 20 7l-2.5 2.5M17.5 14.5 20 17l-2.5 2.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <svg class="i-order" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h15M4 16h15M16.5 5.5 19 8l-2.5 2.5M16.5 13.5 19 16l-2.5 2.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+    <ol class="pl-list" id="plList"></ol>
+  </div>
   <button type="button" class="pl-play" id="plPlay" aria-label="Увімкнути музику">
     <svg class="i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg>
     <svg class="i-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" fill="currentColor"/></svg>
   </button>
   <div class="pl-body">
+    <div class="pl-brand"><span class="pl-eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span>Співає VS School</div>
     <div class="pl-top">
-      <span class="pl-eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
       <span class="pl-title" id="plTitle">Музика ліцею</span>
       <span class="pl-time" id="plTime">0:00</span>
     </div>
     <div class="pl-bar" id="plBar" role="slider" tabindex="0" aria-label="Перемотування" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="plFill"></i></div>
   </div>
-  <button type="button" class="pl-btn pl-prev" id="plPrev" aria-label="Попередній трек"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h2v14H6zM20 5v14L9 12z" fill="currentColor"/></svg></button>
-  <button type="button" class="pl-btn pl-next" id="plNext" aria-label="Наступний трек"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 5h2v14h-2zM4 5v14l11-7z" fill="currentColor"/></svg></button>
+  <button type="button" class="pl-btn pl-prev" id="plPrev" aria-label="Попередня пісня"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h2v14H6zM20 5v14L9 12z" fill="currentColor"/></svg></button>
+  <button type="button" class="pl-btn pl-next" id="plNext" aria-label="Наступна пісня"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 5h2v14h-2zM4 5v14l11-7z" fill="currentColor"/></svg></button>
+  <button type="button" class="pl-btn pl-mode pl-mode-bar" aria-label="Режим: підряд. Перемкнути на вперемішку">
+      <svg class="i-shuffle" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h3.5c2 0 3.2.9 4.3 2.6l2.4 4.8c1.1 1.7 2.3 2.6 4.3 2.6H20M4 17h3.5c1.4 0 2.4-.4 3.3-1.3M14.2 8.3c.9-.9 1.9-1.3 3.3-1.3H20M17.5 4.5 20 7l-2.5 2.5M17.5 14.5 20 17l-2.5 2.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <svg class="i-order" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h15M4 16h15M16.5 5.5 19 8l-2.5 2.5M16.5 13.5 19 16l-2.5 2.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
+  <button type="button" class="pl-btn pl-listbtn" id="plListBtn" aria-label="Показати список пісень" aria-expanded="false" aria-controls="plPanel"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h11M4 12h11M4 17h7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M18 9.5v8.2a1.8 1.8 0 1 1-1.2-1.7V9l3.7-1v1.6z" fill="currentColor"/></svg></button>
   <button type="button" class="pl-btn pl-mute" id="plMute" aria-label="Вимкнути звук" aria-pressed="false">
     <svg class="i-vol" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
     <svg class="i-muted" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16.5 9.5l5 5M21.5 9.5l-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
