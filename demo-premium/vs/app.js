@@ -96,7 +96,11 @@
      Атрибути додаються лише якщо бібліотека завантажилась —
      інакше весь вміст просто видно без анімацій. */
   if (window.AOS) {
+    // На телефонах бокові ефекти (fade-left/right) зсувають блоки за край екрана
+    // і розпирають сторінку вшир, тому там усе з'являється лише знизу вгору.
+    var narrow = window.matchMedia('(max-width: 900px)').matches;
     var set = function (sel, effect, step, base) {
+      if (narrow && /^fade-(left|right)$/.test(effect)) effect = 'fade-up';
       document.querySelectorAll(sel).forEach(function (el, i) {
         el.setAttribute('data-aos', effect);
         var d = (base || 0) + (step ? (i % 4) * step : 0);
