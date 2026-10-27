@@ -1,8 +1,9 @@
 /* VS School — «Преміум»: фоновий аудіоплеєр «Співає VS School».
-   Графітова «пігулка» знизу зліва; над нею розгортається треклист;
-   згортається в кругле коло з еквалайзером. */
+   Однаковий на телефоні й комп'ютері: компактна графітова «пігулка» знизу зліва,
+   над нею розгортається треклист (там же «назад / вперед» і режим); згортається в коло. */
 
-.player{position:fixed;z-index:26;left:max(20px,env(safe-area-inset-left,0px));bottom:calc(20px + env(safe-area-inset-bottom,0px));display:flex;align-items:center;gap:4px;padding:6px 10px 6px 6px;max-width:min(620px,calc(100vw - 112px));border-radius:40px;background:rgba(61,64,67,.94);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);color:var(--dark-fg);box-shadow:0 10px 30px rgba(35,38,42,.25);transition:bottom .35s,opacity .4s,transform .4s,padding .3s;font-family:var(--body)}
+.player{position:fixed;z-index:26;left:max(12px,env(safe-area-inset-left,0px));bottom:calc(20px + env(safe-area-inset-bottom,0px));display:flex;align-items:center;gap:4px;width:min(340px,calc(100vw - 96px));padding:6px;border-radius:40px;background:rgba(61,64,67,.94);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);color:var(--dark-fg);box-shadow:0 10px 30px rgba(35,38,42,.25);transition:bottom .35s,opacity .4s,transform .4s;font-family:var(--body)}
+@media (min-width:781px){.player{left:max(20px,env(safe-area-inset-left,0px))}}
 .player.hide-intro{opacity:0;transform:translateY(16px);pointer-events:none}
 .player svg{width:18px;height:18px;display:block}
 
@@ -13,21 +14,19 @@
 .pl-play .i-pause,.player.playing .pl-play .i-play{display:none}
 .player.playing .pl-play .i-pause{display:block}
 
-.pl-body{flex:1;min-width:0;display:grid;gap:3px;padding:0 8px}
-.pl-brand{display:flex;align-items:center;gap:6px;white-space:nowrap;overflow:hidden;font:600 .62rem/1 var(--head);text-transform:uppercase;letter-spacing:.14em;color:var(--salad)}
+.pl-body{flex:1;min-width:0;display:grid;gap:3px;padding:0 4px}
+.pl-brand{display:flex;align-items:center;gap:5px;white-space:nowrap;overflow:hidden;font:600 .62rem/1 var(--head);text-transform:uppercase;letter-spacing:.08em;color:var(--salad)}
 .pl-top{display:flex;align-items:baseline;gap:8px;min-width:0}
 .pl-title{flex:1;min-width:0;font-size:.84rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pl-title small{font-weight:400;opacity:.65;font-size:.78rem}
-.pl-time{flex:none;font-size:.7rem;opacity:.65;font-variant-numeric:tabular-nums}
+.pl-time{display:none}
 .pl-bar{position:relative;height:4px;margin-top:3px;border-radius:4px;background:rgba(244,241,234,.18);cursor:pointer}
 .pl-bar::before{content:"";position:absolute;inset:-8px 0}
 .pl-bar i{position:absolute;left:0;top:0;bottom:0;width:0;border-radius:inherit;background:var(--iris)}
 
 .pl-btn{flex:none;width:34px;height:34px;border-radius:50%;border:0;background:transparent;color:inherit;display:grid;place-items:center;cursor:pointer;opacity:.85;transition:background .2s,opacity .2s,color .2s}
 .pl-btn:hover{background:rgba(244,241,234,.12);opacity:1}
-.pl-btn[aria-expanded="true"].pl-listbtn{background:rgba(244,241,234,.16);opacity:1}
-.pl-mute .i-muted,.player.muted .pl-mute .i-vol{display:none}
-.player.muted .pl-mute .i-muted{display:block}
+.pl-listbtn[aria-expanded="true"]{background:rgba(244,241,234,.16);opacity:1}
 .player.single .pl-prev,.player.single .pl-next,.player.single .pl-mode{display:none}
 .pl-min{transition:transform .3s}
 
@@ -35,11 +34,6 @@
 .pl-mode .i-shuffle,.player.shuffle .pl-mode .i-order{display:none}
 .player.shuffle .pl-mode .i-shuffle{display:block}
 .player.shuffle .pl-mode{color:var(--salad);opacity:1}
-
-/* Повзунок гучності */
-.pl-vol{flex:none;width:80px;height:4px;margin:0 4px;-webkit-appearance:none;appearance:none;background:linear-gradient(90deg,var(--salad) var(--v,20%),rgba(244,241,234,.2) var(--v,20%));border-radius:4px;cursor:pointer;padding:0;border:0}
-.pl-vol::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--dark-fg);border:0}
-.pl-vol::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--dark-fg);border:0}
 
 /* Еквалайзер, поки грає */
 .pl-eq{flex:none;display:inline-flex;align-items:flex-end;gap:2px;height:10px;width:12px}
@@ -50,15 +44,14 @@
 .pl-eq i:nth-child(4){animation-delay:-.15s!important}
 @keyframes pl-eq{0%{height:20%}100%{height:100%}}
 
-/* Треклист над плеєром */
-.pl-panel{position:absolute;left:0;bottom:calc(100% + 10px);width:min(380px,calc(100vw - 2 * max(12px,env(safe-area-inset-left,0px))));max-height:min(60vh,420px);display:flex;flex-direction:column;border-radius:22px;background:var(--dark);box-shadow:0 14px 40px rgba(35,38,42,.3);overflow:hidden;animation:pl-panel .25s cubic-bezier(.2,.7,.2,1)}
+/* Треклист над плеєром (суцільний фон: вкладений backdrop-filter у Chromium просвічує) */
+.pl-panel{position:absolute;left:0;bottom:calc(100% + 10px);width:min(380px,calc(100vw - 2 * max(12px,env(safe-area-inset-left,0px))));max-height:min(55vh,420px);display:flex;flex-direction:column;border-radius:22px;background:var(--dark);box-shadow:0 14px 40px rgba(35,38,42,.3);overflow:hidden;animation:pl-panel .25s cubic-bezier(.2,.7,.2,1)}
 @keyframes pl-panel{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 .pl-panel::before{content:"";flex:none;height:8px;background:var(--stripes)}
-.pl-head{flex:none;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 12px 10px 18px}
+.pl-head{flex:none;display:flex;align-items:center;gap:4px;padding:12px 10px 8px 18px}
 .pl-head b{flex:1;font:600 .82rem/1.2 var(--head);text-transform:uppercase;letter-spacing:.12em}
-.pl-head-nav{display:none}
-.pl-list{list-style:none;margin:0;padding:0 8px 10px;overflow-y:auto;overscroll-behavior:contain;counter-reset:t}
-.pl-list button{width:100%;display:grid;grid-template-columns:26px 1fr auto;align-items:center;gap:10px;padding:10px 10px;border:0;border-radius:14px;background:transparent;color:inherit;text-align:left;cursor:pointer;font:inherit}
+.pl-list{list-style:none;margin:0;padding:0 8px 10px;overflow-y:auto;overscroll-behavior:contain}
+.pl-list button{width:100%;display:grid;grid-template-columns:26px 1fr auto;align-items:center;gap:10px;padding:10px;border:0;border-radius:14px;background:transparent;color:inherit;text-align:left;cursor:pointer;font:inherit}
 .pl-list button:hover{background:rgba(244,241,234,.08)}
 .pl-list .n{font-size:.78rem;opacity:.5;font-variant-numeric:tabular-nums;text-align:center}
 .pl-list .t{min-width:0;display:grid;gap:2px}
@@ -77,27 +70,17 @@
 @keyframes pl-pulse{0%,100%{box-shadow:0 0 0 0 rgba(196,216,142,.6)}50%{box-shadow:0 0 0 10px rgba(196,216,142,0)}}
 
 /* Згорнутий стан: лише кругла кнопка */
-.player.mini{padding:6px}
-.player.mini .pl-body,.player.mini .pl-prev,.player.mini .pl-next,.player.mini .pl-mode,.player.mini .pl-listbtn,.player.mini .pl-mute,.player.mini .pl-vol{display:none}
+.player.mini{width:auto}
+.player.mini .pl-body,.player.mini .pl-listbtn{display:none}
 .player.mini .pl-min{transform:rotate(180deg)}
 
-.pl-play:focus-visible,.pl-btn:focus-visible,.pl-bar:focus-visible,.pl-vol:focus-visible,.pl-list button:focus-visible{outline:2px solid var(--salad);outline-offset:2px}
+.pl-play:focus-visible,.pl-btn:focus-visible,.pl-bar:focus-visible,.pl-list button:focus-visible{outline:2px solid var(--salad);outline-offset:2px}
 
-/* Середні екрани: ховаємо повзунок гучності */
-@media (max-width:1100px){.pl-vol{display:none}}
-/* Телефони: компактно; режим і «назад» — у треклисті (на iPhone гучність — кнопками телефона) */
+/* Телефони */
 @media (max-width:780px){
-  .player{left:max(12px,env(safe-area-inset-left,0px));width:calc(100vw - 96px);max-width:340px;padding-right:6px}
-  .player.mini{width:auto}
-  /* у рядку лишаємо головне; «назад / вперед» і режим — у шапці треклиста */
-  .player > .pl-prev,.player > .pl-next,.pl-mode-bar,.pl-time,.pl-mute{display:none}
+  .player.lifted{bottom:calc(84px + env(safe-area-inset-bottom,0px))}
   /* кнопка «Записатися» на титулці не ховається під плеєром */
   .hero .wrap{padding-bottom:calc(104px + env(safe-area-inset-bottom,0px))}
-  .pl-brand{letter-spacing:.08em;gap:5px}
-  .pl-head-nav{display:grid}
-  .pl-body{padding:0 4px}
-  .player.lifted{bottom:calc(84px + env(safe-area-inset-bottom,0px))}
-  .pl-panel{max-height:min(55vh,420px)}
 }
 @media (prefers-reduced-motion:reduce){
   .player.playing .pl-eq i,.player.wait .pl-play{animation:none}

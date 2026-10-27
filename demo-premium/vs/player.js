@@ -2,87 +2,120 @@
    Треки й стартова гучність — у vs/content.js (music, musicVolume).
 
    • При кожному відкритті сайту починає з випадкової пісні.
+   • Старт — плавне наростання (FADE_IN), між піснями — плавний перехід без пауз (CROSSFADE):
+     дві «деки» audio, поки одна затихає, інша вже звучить.
    • Режими: «підряд» (по списку по колу) і «вперемішку» (кожна пісня по разу, потім нове коло).
    • Автозапуск: браузери забороняють сайтам вмикати звук без дії користувача, тому плеєр
      пробує заграти одразу, а якщо не дозволили — стартує від першого дотику / кліку / клавіші.
-   • Гучність керується через Web Audio (GainNode), бо iPhone ігнорує audio.volume. */
+   • Гучність через Web Audio (GainNode), бо iPhone ігнорує audio.volume. */
 (function () {
+  var FADE_IN = 4;       // с — наростання при першому запуску
+  var RESUME_IN = 1.2;   // с — наростання після паузи
+  var CROSSFADE = 5;     // с — перехід між піснями наприкінці треку
+  var SWITCH = 1.5;      // с — перехід, коли пісню перемкнули вручну
+  var PAUSE_OUT = 0.4;   // с — затухання перед паузою
+
   var S = window.SITE || {};
   var list = (S.music || []).filter(function (t) { return t && t.src; });
   var box = document.getElementById('player');
-  var audio = document.getElementById('plAudio');
-  if (!box || !audio || !list.length) return;
+  var el0 = document.getElementById('plAudio');
+  if (!box || !el0 || !list.length) return;
 
   var $ = function (id) { return document.getElementById(id); };
-  var btnPlay = $('plPlay'), btnMute = $('plMute'), btnMin = $('plMin');
-  var prevBtns = box.querySelectorAll('.pl-prev'), nextBtns = box.querySelectorAll('.pl-next');   // у рядку плеєра і в шапці треклиста
-  var btnList = $('plListBtn'), panel = $('plPanel'), ul = $('plList');
-  var modeBtns = box.querySelectorAll('.pl-mode');
-  var vol = $('plVol'), bar = $('plBar'), fill = $('plFill'), title = $('plTitle'), time = $('plTime');
+  var btnPlay = $('plPlay'), btnMin = $('plMin'), btnList = $('plListBtn'), panel = $('plPanel'), ul = $('plList');
+  var prevBtns = box.querySelectorAll('.pl-prev'), nextBtns = box.querySelectorAll('.pl-next'), modeBtns = box.querySelectorAll('.pl-mode');
+  var bar = $('plBar'), fill = $('plFill'), title = $('plTitle'), time = $('plTime');
 
   var store = {
     get: function (k) { try { return localStorage.getItem('vs-music-' + k); } catch (e) { return null; } },
     set: function (k, v) { try { localStorage.setItem('vs-music-' + k, v); } catch (e) {} }
   };
 
-  var level = parseFloat(store.get('volume'));
-  if (isNaN(level)) level = typeof S.musicVolume === 'number' ? S.musicVolume : 0.2;
-  var muted = store.get('muted') === '1';
+  var level = typeof S.musicVolume === 'number' ? S.musicVolume : 0.2;
   var userPaused = store.get('paused') === '1';   // людина сама вимкнула — не вмикаємо наступного разу
   var shuffle = store.get('mode') === 'shuffle';
-  var idx = 0, ctx = null, gain = null, fadeTimer = null;
-  var history = [], queue = [];                     // для «вперемішку»: що вже грало і що попереду
+  var idx = 0, playing = false, started = false, xfading = false;
+  var history = [], queue = [];
+  var ctx = null, master = null;
+
+  var el1 = new Audio(); el1.preload = 'auto';
+  var decks = [{ el: el0, fade: 0, anim: null, g: null }, { el: el1, fade: 0, anim: null, g: null }];
+  var cur = 0;
+  var active = function () { return decks[cur]; };
 
   if (list.length < 2) box.classList.add('single');
   if (store.get('mini') === '1') setMini(true);
 
-  /* ---------- Гучність ---------- */
-  function applyVolume(v, smooth) {
-    var target = muted ? 0 : v;
-    if (gain) {
-      var now = ctx.currentTime;
-      gain.gain.cancelScheduledValues(now);
-      gain.gain.setValueAtTime(gain.gain.value, now);
-      gain.gain.linearRampToValueAtTime(target, now + (smooth ? 1.5 : 0.05));
-      audio.volume = 1;
-    } else {
-      clearInterval(fadeTimer);
-      if (!smooth) { audio.volume = target; return; }
-      audio.volume = 0;
-      var t0 = Date.now();
-      fadeTimer = setInterval(function () {
-        var k = Math.min(1, (Date.now() - t0) / 1500);
-        audio.volume = target * k;
-        if (k >= 1) clearInterval(fadeTimer);
-      }, 50);
-    }
+  /* ---------- Гучність і плавні переходи ---------- */
+  // Рівнопотужна крива: на середині переходу обидві пісні звучать без провалу гучності
+  function out(f) { return Math.sin(Math.max(0, Math.min(1, f)) * Math.PI / 2); }
+  function apply(d) {
+    var v = out(d.fade);
+    if (d.g) d.g.gain.setTargetAtTime(v, ctx.currentTime, 0.02);
+    else d.el.volume = Math.max(0, Math.min(1, v * level));
   }
-  /* Web Audio вмикаємо лише після дії користувача (інакше AudioContext «спить») */
-  function setupGain() {
-    if (ctx) { if (ctx.state === 'suspended') ctx.resume(); return; }
+  function fadeTo(d, to, sec, done) {
+    d.anim = { from: d.fade, to: to, t0: Date.now(), ms: Math.max(1, sec * 1000), done: done };
+    tick();
+  }
+  var timer = null;
+  function tick() {
+    var busy = false, now = Date.now();
+    decks.forEach(function (d) {
+      if (!d.anim) return;
+      var a = d.anim, k = Math.min(1, (now - a.t0) / a.ms);
+      d.fade = a.from + (a.to - a.from) * k;
+      apply(d);
+      if (k >= 1) { d.anim = null; if (a.done) a.done(); } else busy = true;
+    });
+    if (busy && !timer) timer = setInterval(tick, 40);
+    if (!busy && timer) { clearInterval(timer); timer = null; }
+  }
+
+  /* Web Audio вмикаємо лише після дії користувача (інакше AudioContext «спить»).
+     Тут же «розблоковуємо» другу деку — iPhone дозволяє грати лише тим audio,
+     які хоч раз запускалися від дотику. */
+  function unlock() {
     var AC = window.AudioContext || window.webkitAudioContext;
-    if (!AC || location.protocol === 'file:') return;   // з диска Web Audio віддає тишу
-    try {
-      ctx = new AC();
-      var src = ctx.createMediaElementSource(audio);
-      gain = ctx.createGain();
-      gain.gain.value = audio.volume;
-      src.connect(gain); gain.connect(ctx.destination);
-      if (ctx.state === 'suspended') ctx.resume();
-    } catch (e) { ctx = null; gain = null; }
-  }
-  function paintVol() {
-    vol.value = Math.round(level * 100);
-    vol.style.setProperty('--v', vol.value + '%');
-    box.classList.toggle('muted', muted || level === 0);
-    btnMute.setAttribute('aria-pressed', String(muted));
-    btnMute.setAttribute('aria-label', muted ? 'Увімкнути звук' : 'Вимкнути звук');
+    if (!ctx && AC && location.protocol !== 'file:') {   // з диска Web Audio віддає тишу
+      try {
+        ctx = new AC();
+        master = ctx.createGain(); master.gain.value = level; master.connect(ctx.destination);
+        decks.forEach(function (d) {
+          var src = ctx.createMediaElementSource(d.el);
+          d.g = ctx.createGain(); d.g.gain.value = out(d.fade);
+          src.connect(d.g); d.g.connect(master);
+          d.el.volume = 1;
+        });
+      } catch (e) { ctx = null; master = null; decks.forEach(function (d) { d.g = null; }); }
+    }
+    if (ctx && ctx.state === 'suspended') ctx.resume();
+    var o = decks[1 - cur];
+    if (!o.primed && o.el.paused) {
+      o.primed = true; o.priming = true;
+      if (!o.el.getAttribute('src')) o.el.src = list[idx].src;
+      o.fade = 0; apply(o);
+      var p = o.el.play();
+      var done = function () { o.priming = false; if (o !== active()) o.el.pause(); };
+      if (p && p.then) p.then(done).catch(function () { o.priming = false; o.primed = false; });
+      else done();
+    }
   }
 
   /* ---------- Режим підряд / вперемішку ---------- */
   function refillQueue() {
     queue = list.map(function (_, i) { return i; }).filter(function (i) { return i !== idx; });
     for (var i = queue.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = queue[i]; queue[i] = queue[j]; queue[j] = t; }
+  }
+  function nextIndex() {
+    if (list.length < 2) return idx;
+    if (!shuffle) return (idx + 1) % list.length;
+    if (!queue.length) refillQueue();
+    return queue.shift();
+  }
+  function prevIndex() {
+    if (shuffle && history.length) return history.pop();
+    return (idx - 1 + list.length) % list.length;
   }
   function paintMode() {
     box.classList.toggle('shuffle', shuffle);
@@ -96,15 +129,6 @@
       paintMode();
     });
   });
-  function nextIndex() {
-    if (!shuffle) return (idx + 1) % list.length;
-    if (!queue.length) refillQueue();
-    return queue.shift();
-  }
-  function prevIndex() {
-    if (shuffle && history.length) return history.pop();
-    return (idx - 1 + list.length) % list.length;
-  }
 
   /* ---------- Треклист ---------- */
   list.forEach(function (t, i) {
@@ -116,17 +140,11 @@
     b.querySelector('.t span').textContent = t.artist || '';
     b.querySelector('.d').textContent = t.time || '';
     b.addEventListener('click', function () {
-      if (i === idx) { if (audio.paused) { userPaused = false; store.set('paused', '0'); play(true); } return; }
-      go(i, true);
+      if (i === idx) { if (!playing) resume(true); return; }
+      switchTo(i, SWITCH, true, true);
     });
     li.appendChild(b); ul.appendChild(li);
   });
-  function paintList() {
-    Array.prototype.forEach.call(ul.children, function (li, i) {
-      li.classList.toggle('on', i === idx);
-      li.querySelector('button').setAttribute('aria-current', i === idx ? 'true' : 'false');
-    });
-  }
   function setPanel(open) {
     panel.hidden = !open;
     btnList.setAttribute('aria-expanded', String(open));
@@ -137,16 +155,17 @@
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !panel.hidden) { setPanel(false); btnList.focus(); } });
   document.addEventListener('pointerdown', function (e) { if (!panel.hidden && !box.contains(e.target)) setPanel(false); });
 
-  /* ---------- Треки ---------- */
-  function load(i) {
-    idx = i;
+  /* ---------- Відображення ---------- */
+  function paintTrack() {
     var t = list[idx];
-    audio.src = t.src;
     title.textContent = t.title || ('Пісня ' + (idx + 1));
     if (t.artist) { var sm = document.createElement('small'); sm.textContent = ' · ' + t.artist; title.appendChild(sm); }
     fill.style.width = '0%';
-    time.textContent = '0:00';
-    paintList();
+    if (time) time.textContent = '0:00';
+    Array.prototype.forEach.call(ul.children, function (li, i) {
+      li.classList.toggle('on', i === idx);
+      li.querySelector('button').setAttribute('aria-current', i === idx ? 'true' : 'false');
+    });
     if ('mediaSession' in navigator) {
       try {
         navigator.mediaSession.metadata = new MediaMetadata({
@@ -156,32 +175,53 @@
       } catch (e) {}
     }
   }
-  function go(i, fromUser) {
-    if (i === idx) return;
-    history.push(idx); if (history.length > 50) history.shift();
-    queue = queue.filter(function (q) { return q !== i; });
-    load(i);
-    if (fromUser) { userPaused = false; store.set('paused', '0'); }
-    if (fromUser || !audio.paused || !userPaused) play(!!fromUser);
+  function paintPlaying(on) {
+    playing = on;
+    box.classList.toggle('playing', on);
+    if (on) box.classList.remove('wait');
+    btnPlay.setAttribute('aria-label', on ? 'Пауза' : 'Увімкнути музику');
   }
   function fmt(s) { s = Math.max(0, Math.floor(s || 0)); return Math.floor(s / 60) + ':' + ('0' + s % 60).slice(-2); }
 
   /* ---------- Відтворення ---------- */
-  function play(fromUser) {
-    if (fromUser) setupGain();
-    var p = audio.play();
-    applyVolume(level, true);
-    if (p && p.catch) p.catch(function () { if (!userPaused) waitForGesture(); });
+  function resume(fromUser) {
+    if (fromUser) { userPaused = false; store.set('paused', '0'); unlock(); }
+    var d = active();
+    decks.forEach(function (x) { if (x !== d) { x.anim = null; x.fade = 0; apply(x); if (!x.priming) x.el.pause(); } });
+    var p = d.el.play();
+    var go = function () { paintPlaying(true); fadeTo(d, 1, started ? RESUME_IN : FADE_IN); started = true; };
+    if (p && p.then) p.then(go).catch(function () { paintPlaying(false); if (!userPaused) waitForGesture(); });
+    else go();
   }
-  function pause() { audio.pause(); }
+  function pause(fromUser) {
+    if (fromUser) { userPaused = true; store.set('paused', '1'); disarm(); box.classList.remove('wait'); }
+    paintPlaying(false); xfading = false;
+    decks.forEach(function (d) { if (!d.el.paused) fadeTo(d, 0, PAUSE_OUT, function () { if (!playing) d.el.pause(); }); });
+  }
+  /* Перехід на пісню i: нова дека наростає, стара затихає за sec секунд */
+  function switchTo(i, sec, fromUser, remember) {
+    if (fromUser) { userPaused = false; store.set('paused', '0'); unlock(); }
+    if (remember !== false) { history.push(idx); if (history.length > 50) history.shift(); }
+    queue = queue.filter(function (q) { return q !== i; });
+    var old = active(), nd = decks[1 - cur];
+    idx = i; cur = 1 - cur; paintTrack();
+    nd.anim = null; nd.el.pause(); nd.el.src = list[i].src; nd.fade = 0; apply(nd);
+    if (!playing && !fromUser && userPaused) return;
+    xfading = true;
+    fadeTo(old, 0, sec, function () { old.el.pause(); xfading = false; });
+    var p = nd.el.play();
+    var go = function () { paintPlaying(true); started = true; fadeTo(nd, 1, sec); };
+    if (p && p.then) p.then(go).catch(function () { xfading = false; paintPlaying(false); if (!userPaused) waitForGesture(); });
+    else go();
+  }
 
   /* Різні браузери вважають «дією користувача» різні події (миша — pointerdown,
      дотик — touchend/click), тому слухаємо всі й пробуємо щоразу, доки не заграє. */
   var GESTURES = ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown'];
   var armed = false;
   function onGesture(e) {
-    if (box.contains(e.target) || userPaused || !audio.paused) return;   // клік по плеєру обробляє сам плеєр
-    play(true);
+    if (box.contains(e.target) || userPaused || playing) return;   // клік по плеєру обробляє сам плеєр
+    unlock(); resume(false);
   }
   function disarm() {
     if (!armed) return;
@@ -195,58 +235,47 @@
     GESTURES.forEach(function (t) { document.addEventListener(t, onGesture, true); });
   }
 
-  audio.addEventListener('playing', disarm);
-  audio.addEventListener('play', function () { box.classList.add('playing'); box.classList.remove('wait'); btnPlay.setAttribute('aria-label', 'Пауза'); });
-  audio.addEventListener('pause', function () { box.classList.remove('playing'); btnPlay.setAttribute('aria-label', 'Увімкнути музику'); });
-  audio.addEventListener('ended', function () { go(nextIndex(), false); });
-  audio.addEventListener('timeupdate', function () {
-    var d = audio.duration || 0;
-    var k = d ? audio.currentTime / d : 0;
-    fill.style.width = (k * 100).toFixed(2) + '%';
-    bar.setAttribute('aria-valuenow', String(Math.round(k * 100)));
-    time.textContent = fmt(audio.currentTime) + (d ? ' / ' + fmt(d) : '');
+  decks.forEach(function (d) {
+    d.el.addEventListener('playing', function () { if (d === active()) disarm(); });
+    d.el.addEventListener('timeupdate', function () {
+      if (d !== active()) return;
+      var dur = d.el.duration || 0, t = d.el.currentTime;
+      var k = dur ? t / dur : 0;
+      fill.style.width = (k * 100).toFixed(2) + '%';
+      bar.setAttribute('aria-valuenow', String(Math.round(k * 100)));
+      if (time) time.textContent = fmt(t) + (dur ? ' / ' + fmt(dur) : '');
+      // наприкінці пісні — плавний перехід на наступну
+      if (playing && !xfading && dur > CROSSFADE * 2 && dur - t <= CROSSFADE) switchTo(nextIndex(), Math.max(1, dur - t), false);
+    });
+    d.el.addEventListener('ended', function () {   // запасний шлях, якщо перехід не встиг стартувати
+      if (d === active() && playing && !xfading) switchTo(nextIndex(), 0.5, false);
+    });
+    d.el.addEventListener('error', function () {
+      if (d === active() && list.length > 1 && (d.errors = (d.errors || 0) + 1) < list.length) switchTo(nextIndex(), 0.3, false, false);
+    });
+    d.el.addEventListener('canplay', function () { d.errors = 0; });
   });
-  var errors = 0;
-  audio.addEventListener('error', function () {
-    if (list.length > 1 && ++errors < list.length) go(nextIndex(), false);
-  });
-  audio.addEventListener('canplay', function () { errors = 0; });
 
   /* ---------- Кнопки ---------- */
-  btnPlay.addEventListener('click', function () {
-    if (audio.paused) { userPaused = false; store.set('paused', '0'); play(true); }
-    else { userPaused = true; store.set('paused', '1'); pause(); disarm(); box.classList.remove('wait'); }
-  });
+  btnPlay.addEventListener('click', function () { if (playing) pause(true); else resume(true); });
   prevBtns.forEach(function (b) {
     b.addEventListener('click', function () {
-      if (audio.currentTime > 3) { audio.currentTime = 0; return; }
-      // крок назад не має потрапляти в історію знову
-      load(prevIndex()); userPaused = false; store.set('paused', '0'); play(true);
+      var d = active();
+      if (d.el.currentTime > 3 && playing) { d.el.currentTime = 0; return; }
+      switchTo(prevIndex(), SWITCH, true, false);
     });
   });
-  nextBtns.forEach(function (b) { b.addEventListener('click', function () { go(nextIndex(), true); }); });
-  btnMute.addEventListener('click', function () {
-    setupGain();
-    muted = !muted; store.set('muted', muted ? '1' : '0');
-    if (!muted && level === 0) level = 0.2;
-    paintVol(); applyVolume(level, false);
-  });
-  vol.addEventListener('input', function () {
-    setupGain();
-    level = vol.value / 100; muted = false;
-    store.set('volume', String(level)); store.set('muted', '0');
-    paintVol(); applyVolume(level, false);
-  });
+  nextBtns.forEach(function (b) { b.addEventListener('click', function () { switchTo(nextIndex(), SWITCH, true); }); });
   function seek(e) {
-    var r = bar.getBoundingClientRect();
+    var d = active(), r = bar.getBoundingClientRect();
     var k = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
-    if (audio.duration) audio.currentTime = k * audio.duration;
+    if (d.el.duration) d.el.currentTime = k * d.el.duration;
   }
   bar.addEventListener('click', seek);
   bar.addEventListener('keydown', function (e) {
-    if (!audio.duration) return;
-    if (e.key === 'ArrowRight') audio.currentTime = Math.min(audio.duration, audio.currentTime + 5);
-    if (e.key === 'ArrowLeft') audio.currentTime = Math.max(0, audio.currentTime - 5);
+    var a = active().el; if (!a.duration) return;
+    if (e.key === 'ArrowRight') a.currentTime = Math.min(a.duration, a.currentTime + 5);
+    if (e.key === 'ArrowLeft') a.currentTime = Math.max(0, a.currentTime - 5);
   });
   function setMini(on) {
     box.classList.toggle('mini', on);
@@ -261,11 +290,11 @@
   /* Кнопки на заблокованому екрані / в шторці телефона */
   if ('mediaSession' in navigator) {
     try {
-      navigator.mediaSession.setActionHandler('play', function () { userPaused = false; store.set('paused', '0'); play(true); });
-      navigator.mediaSession.setActionHandler('pause', function () { userPaused = true; store.set('paused', '1'); pause(); });
+      navigator.mediaSession.setActionHandler('play', function () { resume(true); });
+      navigator.mediaSession.setActionHandler('pause', function () { pause(true); });
       if (list.length > 1) {
-        navigator.mediaSession.setActionHandler('previoustrack', function () { load(prevIndex()); play(true); });
-        navigator.mediaSession.setActionHandler('nexttrack', function () { go(nextIndex(), true); });
+        navigator.mediaSession.setActionHandler('previoustrack', function () { switchTo(prevIndex(), SWITCH, true, false); });
+        navigator.mediaSession.setActionHandler('nexttrack', function () { switchTo(nextIndex(), SWITCH, true); });
       }
     } catch (e) {}
   }
@@ -273,8 +302,10 @@
   /* Вкладку сховали — пауза; повернулися — граємо далі */
   var resumeOnShow = false;
   document.addEventListener('visibilitychange', function () {
-    if (document.hidden) { resumeOnShow = !audio.paused; if (resumeOnShow) audio.pause(); }
-    else if (resumeOnShow) { resumeOnShow = false; play(false); }
+    if (document.hidden) {
+      resumeOnShow = playing;
+      if (playing) { paintPlaying(false); xfading = false; decks.forEach(function (d) { d.anim = null; d.el.pause(); }); }
+    } else if (resumeOnShow) { resumeOnShow = false; active().fade = 0; resume(false); }
   });
 
   /* Над нижньою мобільною панеллю «Подзвонити / Записатися» — піднімаємось */
@@ -285,13 +316,13 @@
   }
 
   /* ---------- Старт: випадкова пісня при кожному відкритті ---------- */
-  load(Math.floor(Math.random() * list.length));
+  idx = Math.floor(Math.random() * list.length);
+  el0.src = list[idx].src;
+  decks.forEach(apply);
+  paintTrack(); paintMode();
   if (shuffle) refillQueue();
-  paintVol(); paintMode();
   box.hidden = false;
   var introMs = window.VS_INTRO_MS || 0;
   if (introMs) { box.classList.add('hide-intro'); setTimeout(function () { box.classList.remove('hide-intro'); }, introMs + 300); }
-  if (userPaused) return;
-  audio.volume = 0;
-  play(false);
+  if (!userPaused) resume(false);
 })();

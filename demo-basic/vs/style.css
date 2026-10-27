@@ -276,7 +276,8 @@ footer .wrap{padding-block:64px 32px;display:grid;gap:48px}
   .hero .wrap{padding-block:112px 56px}
   .head-row>.pill,.f-brand .pill{justify-self:start}
   .shapes{display:flex;flex-wrap:wrap;justify-content:center;gap:10px}
-  .shapes li{width:calc((100% - 20px) / 3);padding:10%}
+  /* у flex-рядку відсотковий padding рахується від ширини всієї смуги, тому — фіксований */
+  .shapes li{width:calc((100% - 20px) / 3);padding:12px;font-size:.7rem;line-height:1.25}
   .pre-grid{grid-template-columns:1fr 1fr}
   .pre-grid div{min-height:0;padding:18px 16px}
   .pre-grid b{font-size:.88rem}
@@ -285,6 +286,8 @@ footer .wrap{padding-block:64px 32px;display:grid;gap:48px}
   .chip{padding:10px 14px;font-size:.88rem}
 }
 @media (max-width:480px){
+  .shapes{gap:12px}
+  .shapes li{width:calc((100% - 12px) / 2);max-width:168px;padding:16px;font-size:.78rem}
   .pre-grid{grid-template-columns:1fr 1fr}
   .fmt .btns{flex-direction:column;align-items:stretch}
   .fmt .btns .link{justify-content:center}
