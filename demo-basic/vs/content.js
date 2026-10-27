@@ -13,14 +13,14 @@ window.SITE = {
      img  — шлях до фото на хостингу (папка images/news-page/)
      link — посилання на пост у Facebook/Instagram (можна "")     */
   news: [
-    { date: "27 січня 2026",  title: "Перемога у І загальноміському етапі МАН",            img: "../images/news-page/260127.jpg",      link: "https://www.facebook.com/share/p/1DbfzEyvqg/" },
-    { date: "14 січня 2026",  title: "Конкурс «Різдвяне диво в стилі STEM – 2025»",        img: "../images/news-page/260114.jpg",      link: "https://www.facebook.com/share/p/1B6myqsKjh/" },
-    { date: "30 грудня 2025", title: "Інтерактив англійською мовою у таборі",               img: "../images/news-page/251230.jpg",      link: "https://www.facebook.com/share/p/1ERHZffukk/" },
-    { date: "23 грудня 2025", title: "Наші призери олімпіад",                               img: "../images/news-page/251223hist.jpg",  link: "https://www.facebook.com/share/p/1D2e2CasiN/" },
-    { date: "22 грудня 2025", title: "Шоу талантів «ВС СКУЛ»",                              img: "../images/news-page/251222.jpg",      link: "https://www.facebook.com/share/p/1AMfkYUiRL/" },
-    { date: "17 грудня 2025", title: "Свято драматичного гуртка «Снігова Королева»",        img: "../images/news-page/251217snowq.jpg", link: "https://www.facebook.com/share/p/1CNFEHN1SY/" },
-    { date: "17 грудня 2025", title: "Гурток карате (шотокан)",                             img: "../images/news-page/251217.png",      link: "https://www.facebook.com/share/r/14PmMQBsXBw/" },
-    { date: "23 грудня 2025", title: "Благодійний ярмарок",                                 img: "../images/news-page/251223.jpg",      link: "https://www.facebook.com/share/p/1DcdZZR25n/" }
+    { date: "27 січня 2026",  title: "Перемога у І загальноміському етапі МАН",            img: "../images/news-page/260127.webp",      link: "https://www.facebook.com/share/p/1DbfzEyvqg/" },
+    { date: "14 січня 2026",  title: "Конкурс «Різдвяне диво в стилі STEM – 2025»",        img: "../images/news-page/260114.webp",      link: "https://www.facebook.com/share/p/1B6myqsKjh/" },
+    { date: "30 грудня 2025", title: "Інтерактив англійською мовою у таборі",               img: "../images/news-page/251230.webp",      link: "https://www.facebook.com/share/p/1ERHZffukk/" },
+    { date: "23 грудня 2025", title: "Наші призери олімпіад",                               img: "../images/news-page/251223hist.webp",  link: "https://www.facebook.com/share/p/1D2e2CasiN/" },
+    { date: "23 грудня 2025", title: "Благодійний ярмарок",                                 img: "../images/news-page/251223.webp",      link: "https://www.facebook.com/share/p/1DcdZZR25n/" },
+    { date: "22 грудня 2025", title: "Шоу талантів «ВС СКУЛ»",                              img: "../images/news-page/251222.webp",      link: "https://www.facebook.com/share/p/1AMfkYUiRL/" },
+    { date: "17 грудня 2025", title: "Свято драматичного гуртка «Снігова Королева»",        img: "../images/news-page/251217snowq.webp", link: "https://www.facebook.com/share/p/1CNFEHN1SY/" },
+    { date: "17 грудня 2025", title: "Гурток карате (шотокан)",                             img: "../images/news-page/251217.webp",      link: "https://www.facebook.com/share/r/14PmMQBsXBw/" }
   ],
 
   /* ---------- ГУРТКИ ----------
