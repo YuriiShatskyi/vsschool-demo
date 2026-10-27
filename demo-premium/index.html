@@ -18,6 +18,7 @@
 <link rel="stylesheet" href="vs/style.css">
 <link rel="stylesheet" href="vs/premium.css">
 <link rel="stylesheet" href="vs/exclusive.css">
+<link rel="stylesheet" href="vs/player.css">
 </head>
 <body class="is-loading">
 
@@ -418,12 +419,38 @@
   <a class="go" href="#contacts">Записатися</a>
 </div>
 
+<!-- Фоновий аудіоплеєр (треки — у vs/content.js, розділ music) -->
+<div class="player" id="player" role="region" aria-label="Музика" hidden>
+  <button type="button" class="pl-play" id="plPlay" aria-label="Увімкнути музику">
+    <svg class="i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg>
+    <svg class="i-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" fill="currentColor"/></svg>
+  </button>
+  <div class="pl-body">
+    <div class="pl-top">
+      <span class="pl-eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+      <span class="pl-title" id="plTitle">Музика ліцею</span>
+      <span class="pl-time" id="plTime">0:00</span>
+    </div>
+    <div class="pl-bar" id="plBar" role="slider" tabindex="0" aria-label="Перемотування" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="plFill"></i></div>
+  </div>
+  <button type="button" class="pl-btn pl-prev" id="plPrev" aria-label="Попередній трек"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h2v14H6zM20 5v14L9 12z" fill="currentColor"/></svg></button>
+  <button type="button" class="pl-btn pl-next" id="plNext" aria-label="Наступний трек"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 5h2v14h-2zM4 5v14l11-7z" fill="currentColor"/></svg></button>
+  <button type="button" class="pl-btn pl-mute" id="plMute" aria-label="Вимкнути звук" aria-pressed="false">
+    <svg class="i-vol" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    <svg class="i-muted" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16.5 9.5l5 5M21.5 9.5l-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+  </button>
+  <input class="pl-vol" id="plVol" type="range" min="0" max="100" step="1" value="20" aria-label="Гучність">
+  <button type="button" class="pl-btn pl-min" id="plMin" aria-label="Згорнути плеєр" aria-expanded="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+  <audio id="plAudio" preload="auto"></audio>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Swiper/11.0.5/swiper-bundle.min.js"></script>
 <script src="vs/content.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js"></script>
 <script src="vs/premium.js"></script>
 <script src="vs/exclusive.js"></script>
+<script src="vs/player.js"></script>
 <script src="vs/app.js"></script>
 </body>
 </html>

@@ -1,0 +1,65 @@
+/* VS School — «Преміум»: фоновий аудіоплеєр.
+   Графітова «пігулка» знизу зліва; згортається в кругле коло з еквалайзером. */
+
+.player{position:fixed;z-index:26;left:max(20px,env(safe-area-inset-left,0px));bottom:calc(20px + env(safe-area-inset-bottom,0px));display:flex;align-items:center;gap:6px;padding:6px 10px 6px 6px;max-width:min(560px,calc(100vw - 112px));border-radius:40px;background:rgba(61,64,67,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);color:var(--dark-fg);box-shadow:0 10px 30px rgba(35,38,42,.25);transition:bottom .35s,opacity .4s,transform .4s,padding .3s;font-family:var(--body)}
+.player.hide-intro{opacity:0;transform:translateY(16px);pointer-events:none}
+.player svg{width:18px;height:18px;display:block}
+
+/* Кнопка відтворення — у фірмовому градієнті фасаду */
+.pl-play{flex:none;width:44px;height:44px;border-radius:50%;border:0;background:var(--iris);color:var(--ink);display:grid;place-items:center;cursor:pointer;transition:transform .2s}
+.pl-play:hover{transform:scale(1.06)}
+.pl-play svg{width:20px;height:20px}
+.pl-play .i-pause,.player.playing .pl-play .i-play{display:none}
+.player.playing .pl-play .i-pause{display:block}
+
+.pl-body{flex:1;min-width:0;display:grid;gap:6px;padding:0 6px}
+.pl-top{display:flex;align-items:center;gap:8px;min-width:0}
+.pl-title{flex:1;min-width:0;font-size:.82rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pl-time{flex:none;font-size:.72rem;opacity:.65;font-variant-numeric:tabular-nums}
+.pl-bar{position:relative;height:4px;border-radius:4px;background:rgba(244,241,234,.18);cursor:pointer}
+.pl-bar::before{content:"";position:absolute;inset:-8px 0}
+.pl-bar i{position:absolute;left:0;top:0;bottom:0;width:0;border-radius:inherit;background:var(--iris)}
+
+.pl-btn{flex:none;width:34px;height:34px;border-radius:50%;border:0;background:transparent;color:inherit;display:grid;place-items:center;cursor:pointer;opacity:.85;transition:background .2s,opacity .2s}
+.pl-btn:hover{background:rgba(244,241,234,.12);opacity:1}
+.pl-btn[disabled]{opacity:.3;cursor:default;background:transparent}
+.pl-mute .i-muted,.player.muted .pl-mute .i-vol{display:none}
+.player.muted .pl-mute .i-muted{display:block}
+.player.single .pl-prev,.player.single .pl-next{display:none}
+.pl-min{transition:transform .3s}
+
+/* Повзунок гучності */
+.pl-vol{flex:none;width:84px;height:4px;margin:0 4px;-webkit-appearance:none;appearance:none;background:linear-gradient(90deg,var(--salad) var(--v,20%),rgba(244,241,234,.2) var(--v,20%));border-radius:4px;cursor:pointer;padding:0;border:0}
+.pl-vol::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--dark-fg);border:0}
+.pl-vol::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--dark-fg);border:0}
+
+/* Еквалайзер, поки грає */
+.pl-eq{flex:none;display:flex;align-items:flex-end;gap:2px;height:12px;width:14px}
+.pl-eq i{flex:1;height:30%;background:var(--salad);border-radius:1px}
+.player.playing .pl-eq i{animation:pl-eq .9s ease-in-out infinite alternate}
+.pl-eq i:nth-child(2){animation-delay:-.3s!important}
+.pl-eq i:nth-child(3){animation-delay:-.6s!important}
+.pl-eq i:nth-child(4){animation-delay:-.15s!important}
+@keyframes pl-eq{0%{height:20%}100%{height:100%}}
+
+/* Підказка, коли браузер заблокував автозапуск */
+.player.wait .pl-play{animation:pl-pulse 1.6s ease-in-out infinite}
+@keyframes pl-pulse{0%,100%{box-shadow:0 0 0 0 rgba(196,216,142,.6)}50%{box-shadow:0 0 0 10px rgba(196,216,142,0)}}
+
+/* Згорнутий стан: лише кругла кнопка */
+.player.mini{padding:6px}
+.player.mini .pl-body,.player.mini .pl-prev,.player.mini .pl-next,.player.mini .pl-mute,.player.mini .pl-vol{display:none}
+.player.mini .pl-min{transform:rotate(180deg)}
+
+.pl-play:focus-visible,.pl-btn:focus-visible,.pl-bar:focus-visible,.pl-vol:focus-visible{outline:2px solid var(--salad);outline-offset:2px}
+
+/* Телефони: компактно, без повзунка гучності (на iPhone гучність — кнопками телефона) */
+@media (max-width:780px){
+  .player{left:max(12px,env(safe-area-inset-left,0px));max-width:calc(100vw - 96px);padding-right:6px}
+  .pl-vol,.pl-prev{display:none}
+  .player.lifted{bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+}
+@media (prefers-reduced-motion:reduce){
+  .player.playing .pl-eq i,.player.wait .pl-play{animation:none}
+  .player.playing .pl-eq i{height:70%}
+}
