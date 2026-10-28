@@ -298,3 +298,14 @@ footer .wrap{padding-block:64px 32px;display:grid;gap:48px}
   .f-top{grid-template-columns:1fr 1fr;gap:28px 20px}
   .f-brand,.f-top>div:last-child{grid-column:1/-1}
 }
+
+/* ===================== Обкладинки новин: фірмова рамка + м'яке тонування =====================
+   Фото квадратне, по центру світлого фірмового фону, знизу — смужка кольорів фасаду.
+   Тонування — фільтр + легкий шар фірмового кольору, тож нові новини виглядатимуть так само без обробки файлів. */
+.news .ph{position:relative;display:grid;place-items:center;padding:16px 16px 24px;background:linear-gradient(160deg,#F2F5EC 0%,#E4EDE1 55%,#D7E4EE 100%)}
+.news .ph::after{content:"";position:absolute;left:0;right:0;bottom:0;height:8px;background:var(--stripes)}
+.news .ph::before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(160deg,#C9DDB6 0%,#BED2E3 100%);mix-blend-mode:color;opacity:.18;transition:opacity .5s ease}
+.news .ph::after{z-index:2}
+.news .ph img{width:auto;height:100%;max-width:100%;aspect-ratio:1/1;object-fit:cover;object-position:50% 30%;filter:saturate(.72) contrast(.97) brightness(1.03);box-shadow:0 6px 18px rgba(35,38,42,.12);transition:none}
+.news a:hover .ph img{transform:none}
+@media (max-width:480px){.news .ph{padding:10px 10px 16px}.news .ph::after{height:6px}}

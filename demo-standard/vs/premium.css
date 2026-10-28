@@ -80,3 +80,14 @@ body.is-loading .hero-logo,body.is-loading .hero>img{animation-play-state:paused
   .marquee-track{animation:none}
   .hero>img{height:100%;top:0}
 }
+
+/* ===================== Обкладинки новин у слайдері: фірмова рамка + м'яке тонування =====================
+   Фото квадратне по центру світлого фірмового фону, знизу — смужка кольорів фасаду.
+   При наведенні фото плавно повертає справжні кольори. */
+.news-swiper .ph{aspect-ratio:1/1;position:relative;display:grid;place-items:center;padding:18px 18px 26px;background:linear-gradient(160deg,#F2F5EC 0%,#E4EDE1 55%,#D7E4EE 100%)}
+.news-swiper .ph::after{content:"";position:absolute;left:0;right:0;bottom:0;height:8px;background:var(--stripes)}
+.news-swiper .ph::before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(160deg,#C9DDB6 0%,#BED2E3 100%);mix-blend-mode:color;opacity:.18;transition:opacity .5s ease}
+.news-swiper .ph::after{z-index:2}
+.news-swiper .ph img{position:absolute;top:18px;bottom:26px;left:0;right:0;margin:0 auto;width:auto;height:calc(100% - 44px);max-width:calc(100% - 36px);aspect-ratio:1/1;object-fit:cover;object-position:50% 30%;filter:saturate(.72) contrast(.97) brightness(1.03);box-shadow:0 8px 22px rgba(35,38,42,.14);transition:filter .5s ease}
+.news-swiper .slide:hover .ph img{transform:none;filter:none}
+.news-swiper .slide:hover .ph::before{opacity:0}
